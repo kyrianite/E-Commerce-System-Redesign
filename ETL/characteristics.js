@@ -1,7 +1,7 @@
 const fs = require('fs');
 const csv = require('csv-parser');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
-const { Transform } = require('stream').Transform;
+const { Transform } = require('stream');
 
 const csvStringifier = createCsvStringifier({
   header: [
@@ -14,6 +14,7 @@ const transformer = new Transform({
   objectMode: true,
   transform(chunk, encoding, cb) {
     // transform chunk
+    console.log(csvStringifier.stringifyRecords([chunk]));
     cb();
   },
 });
