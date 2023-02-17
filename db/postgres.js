@@ -1,148 +1,72 @@
-/* eslint-disable max-len */
 require('dotenv').config();
-const { Sequelize, DataTypes } = require('sequelize');
+const { Client } = require('pg');
+const fs = require('fs');
 
-const sequelize = new Sequelize(process.env.PG_DB, process.env.PG_USER, process.env.PG_PASS, {
+const credentials = {
+  user: process.env.PG_USER,
   host: 'localhost',
-  dialect: 'postgres',
-});
+  database: process.env.PG_DB,
+  password: process.env.PG_PASS,
+  port: process.env.PG_PORT,
+};
 
-async function createSchemas() {
-  // reviews.csv
-  // id,product_id,rating,date,summary,body,recommend,reported,reviewer_name,reviewer_email,response,helpfulness
-  const Reviews = sequelize.define('Reviews', {
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    product_id: {
-      type: DataTypes.BIGINT,
-    },
-    rating: {
-      type: DataTypes.INTEGER,
-    },
-    date: {
-      type: DataTypes.DATE,
-    },
-    summary: {
-      type: DataTypes.STRING,
-    },
-    body: {
-      type: DataTypes.STRING,
-    },
-    recommend: {
-      type: DataTypes.BOOLEAN,
-    },
-    reported: {
-      type: DataTypes.BOOLEAN,
-    },
-    reviewer_name: {
-      type: DataTypes.STRING,
-    },
-    reviewer_email: {
-      type: DataTypes.STRING,
-    },
-    reponse: {
-      type: DataTypes.STRING,
-    },
-    helpfulness: {
-      type: DataTypes.INTEGER,
-    },
-    photos_id: {
-      type: DataTypes.BIGINT,
-    },
-    characteristic_id: {
-      type: DataTypes.BIGINT,
-    },
-  }, {
-    // other model options
-  });
+const client = new Client(credentials);
 
-  // reviews-photos.csv
-  // id,review_id,url
-  const ReviewsPhotos = sequelize.define('ReviewsPhotos', {
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    review_id: {
-      type: DataTypes.BIGINT,
-      references: {
-        model: 'Reviews',
-        key: 'id',
-      },
-    },
-    url: {
-      type: DataTypes.STRING,
-    },
-  }, {
-    // other model options
-  });
-
-  // characteristic_reviews.csv
-  // id,characteristic_id,review_id,value
-  const CharacteristicReviews = sequelize.define('CharacteristicReviews', {
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    characteristic_id: {
-      type: DataTypes.BIGINT,
-      references: {
-        model: 'Characteristics',
-        key: 'id',
-      },
-    },
-    review_id: {
-      type: DataTypes.BIGINT,
-      references: {
-        model: 'Reviews',
-        key: 'id',
-      },
-    },
-    value: {
-      type: DataTypes.INTEGER,
-    },
-  }, {
-    // other model options
-  });
-
-  // characteristics.csv
-  // id,product_id,name
-  const Characteristics = sequelize.define('Characteristics', {
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    product_id: {
-      type: DataTypes.INTEGER,
-    },
-    name: {
-      type: DataTypes.STRING,
-    },
-  }, {
-    // other model options
-  });
+async function connectDB() {
+  await client.connect();
+  console.log('Connected to PG DB!');
 }
 
-async function testConnection() {
-  try {
-    await sequelize.authenticate();
-    console.log('Connected to postgres!');
-
-    await createSchemas();
-    await sequelize.sync({ force: true });
-    console.log('Loaded Schemas!');
-
-    await sequelize.close();
-    console.log('Closed connection!');
-  } catch (err) {
-    console.log('Unable to connect to postgres', err);
-  }
+async function closeDB() {
+  await client.end();
+  console.log('Closed connection to PG DB!');
 }
 
-testConnection();
+async function loadSchema() {
+  const sql = fs.readFileSync('db/pgSchema.sql', 'utf8');
+  await client.query(sql);
+  console.log('Loaded schema!');
+}
+
+async function loadData() {
+  const loadProducts = `COPY products FROM '/tmp/product.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadReviews = `COPY reviews FROM '/tmp/reviews.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadReviewsPhotos = `COPY reviews_photos FROM '/tmp/reviews_photos.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadCharacteristics = `COPY characteristics FROM '/tmp/characteristics.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadCharacteristicReviews = `COPY characteristic_reviews FROM '/tmp/characteristic_reviews.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+
+  console.log('Loading Products...');
+  console.time();
+  await client.query(loadProducts);
+  console.timeEnd();
+
+  console.log('Loading Reviews...');
+  console.time();
+  await client.query(loadReviews);
+  console.timeEnd();
+
+  console.log('Loading Reviews Photos...');
+  console.time();
+  await client.query(loadReviewsPhotos);
+  console.timeEnd();
+
+  console.log('Loading Characteristics...');
+  console.time();
+  await client.query(loadCharacteristics);
+  console.timeEnd();
+
+  console.log('Loading Characteristic Reviews...');
+  console.time();
+  await client.query(loadCharacteristicReviews);
+  console.timeEnd();
+
+  console.log('Loaded All CSV Data!');
+}
+
+// test functionality
+(async () => {
+  await connectDB();
+  // await loadSchema();
+  // await loadData();
+  await closeDB();
+})();
