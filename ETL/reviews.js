@@ -30,12 +30,17 @@ const transformer = new Transform({
   },
 });
 
-const readStream = fs.createReadStream('/tmp/reviews_mini.csv');
-const writeStream = fs.createWriteStream('/tmp/reviews_mini_clean.csv');
+console.log('Cleaning reviews.csv to update time from UNIX to ISO...');
+console.time();
+const readStream = fs.createReadStream('/tmp/reviews.csv');
+const writeStream = fs.createWriteStream('/tmp/reviews_clean.csv');
 
 writeStream.write(csvStringifier.getHeaderString());
 readStream
   .pipe(csv())
   .pipe(transformer)
   .pipe(writeStream)
-  .on('finish', () => { console.log('Finished transforming reviews csv'); });
+  .on('finish', () => {
+    console.timeEnd();
+    console.log('Finished transforming reviews csv');
+  });

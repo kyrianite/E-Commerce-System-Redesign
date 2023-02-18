@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const controller = require('./queries');
+const controller = require('./controllers');
 
 router.get('/reviews', controller.getReviews);
 router.get('/reviews/meta', controller.getMetaData);

@@ -1,6 +1,5 @@
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS reviews CASCADE;
-DROP TABLE IF EXISTS reviews_photos CASCADE;
 DROP TABLE IF EXISTS characteristics CASCADE;
 DROP TABLE IF EXISTS characteristic_reviews CASCADE;
 
@@ -30,15 +29,6 @@ CREATE TABLE reviews (
 );
 
 CREATE INDEX reviews_pID_index ON reviews(product_id);
-
-CREATE TABLE reviews_photos (
-  id                  SERIAL PRIMARY KEY,
-  review_id           INTEGER REFERENCES reviews(id),
-  url                 TEXT
-);
-
-CREATE INDEX reviews_photos_rID_index ON reviews_photos(id);
-
 
 CREATE TABLE characteristics (
   id                  SERIAL PRIMARY KEY,

@@ -5,8 +5,8 @@ const { Pool } = require('pg');
 const pool = new Pool({
   user: process.env.PG_USER,
   host: 'localhost',
-  // database: process.env.PG_DB,
-  database: 'sdc_mini',
+  database: process.env.PG_DB,
+  // database: 'sdc_mini',
   password: process.env.PG_PASS,
   port: process.env.PG_PORT,
 });
@@ -23,10 +23,6 @@ const validReviewRequest = (req) => {
   return false;
 };
 
-const formatReviewResults = (res) => {
-
-};
-
 module.exports = {
   getReviews: async (req, res) => {
     try {
@@ -34,9 +30,14 @@ module.exports = {
       const { sort, product_id } = req.query;
       if (page === undefined) { page = 1; }
       if (count === undefined) { count = 5; }
+      const offset = (page - 1) * count;
+
       if (!validReviewRequest(req.query)) { throw Error; }
-      const mainInfo = await pool.query(`SELECT * FROM reviews WHERE product_id=${product_id} AND REPORTED=false ORDER BY helpfulness DESC`);
-      console.log(mainInfo.rows);
+      let orderBy = 'helpfulness DESC';
+      if (sort === '"newest"') { orderBy = 'date DESC'; }
+      if (sort === '"relevant"') { orderBy = 'rating DESC'; }
+
+      const mainInfo = await pool.query(`SELECT * FROM reviews WHERE product_id=${product_id} AND REPORTED=false ORDER BY ${orderBy} LIMIT ${count} OFFSET ${offset}`);
       res.status(200).json(mainInfo.rows);
     } catch (err) {
       res.status(500).send();
