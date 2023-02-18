@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 // data is located in /tmp/fileName.csv
 const fs = require('fs');
 const csv = require('csv-parser');
@@ -22,8 +23,9 @@ const csvStringifier = createCsvStringifier({
 const transformer = new Transform({
   objectMode: true,
   transform(chunk, encoding, cb) {
-    // transform chunk
-    cb();
+    const unixDate = new Date(Number(chunk.date));
+    chunk.date = unixDate.toISOString();
+    cb(null, csvStringifier.stringifyRecords([chunk]));
   },
 });
 

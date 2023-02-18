@@ -1,18 +1,39 @@
+/* eslint-disable object-curly-newline */
+/* eslint-disable camelcase */
 const { Pool } = require('pg');
 
 const pool = new Pool({
   user: process.env.PG_USER,
   host: 'localhost',
-  database: process.env.PG_DB,
+  // database: process.env.PG_DB,
+  database: 'sdc_mini',
   password: process.env.PG_PASS,
   port: process.env.PG_PORT,
 });
 
+const validReviewRequest = (req) => {
+  const { page, count, product_id } = req;
+  const sort = req.sort.slice(1, req.sort.length - 1); // remove double string quotes
+  if (Number.isNaN(page) || Number.isNaN(count) || Number.isNaN(product_id)) {
+    return false;
+  }
+  if (sort === 'newest' || sort === 'helpful' || sort === 'relevant') {
+    return true;
+  }
+  return false;
+};
+
 module.exports = {
   getReviews: async (req, res) => {
     try {
-      const info = await pool.query('test statement');
-      res.status(200).json(info);
+      let { page, count } = req.query;
+      const { sort, product_id } = req.query;
+      if (page === undefined) { page = 1; }
+      if (count === undefined) { count = 5; }
+      if (!validReviewRequest(req.query)) { throw Error; }
+      const result = await pool.query(`SELECT * FROM REVIEWS WHERE product_id=${product_id} AND REPORTED=false ORDER BY helpfulness DESC`);
+      console.log(result.rows);
+      res.status(200).json({ test: 'it is working somehow...' });
     } catch (err) {
       res.status(500).send();
     }
@@ -35,10 +56,8 @@ module.exports = {
   },
   markHelpful: async (req, res) => {
     const reviewId = req.params.review_id;
-    console.log('reviewId to mark helpful: ', reviewId);
     try {
-      const review = pool.query(`UPDATE reviews SET helpfulness = helpfulness + 1 WHERE id=${reviewId}`);
-      console.log(review.rows);
+      await pool.query(`UPDATE reviews SET helpfulness = helpfulness + 1 WHERE id=${reviewId}`);
       res.status(204).send();
     } catch (err) {
       res.status(500).send();
@@ -46,13 +65,11 @@ module.exports = {
   },
   reportReview: async (req, res) => {
     const reviewId = req.params.review_id;
-    console.log('reviewId to report: ', reviewId);
     try {
-      const review = pool.query(`UPDATE reviews SET reported = true WHERE id=${reviewId}`);
-      console.log(review.rows);
+      await pool.query(`UPDATE reviews SET reported = true WHERE id=${reviewId}`);
       res.status(204).send();
     } catch (err) {
       res.status(500).send();
     }
-  }
+  },
 };
