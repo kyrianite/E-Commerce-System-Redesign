@@ -1,11 +1,14 @@
+/* eslint-disable quotes */
 require('dotenv').config();
 const { Client } = require('pg');
 const fs = require('fs');
+const csv = require('csv-parser');
 
 const credentials = {
   user: process.env.PG_USER,
   host: 'localhost',
-  database: process.env.PG_DB,
+  // database: process.env.PG_DB,
+  database: 'sdc_mini',
   password: process.env.PG_PASS,
   port: process.env.PG_PORT,
 };
@@ -29,11 +32,11 @@ async function loadSchema() {
 }
 
 async function loadData() {
-  const loadProducts = `COPY products FROM '/tmp/product.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadReviews = `COPY reviews FROM '/tmp/reviews.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadReviewsPhotos = `COPY reviews_photos FROM '/tmp/reviews_photos.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadCharacteristics = `COPY characteristics FROM '/tmp/characteristics.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadCharacteristicReviews = `COPY characteristic_reviews FROM '/tmp/characteristic_reviews.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadProducts = `COPY products FROM '/tmp/product_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadReviews = `COPY reviews (id, product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, response, helpfulness) FROM '/tmp/reviews_mini_clean.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadReviewsPhotos = `COPY reviews_photos FROM '/tmp/reviews_photos_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadCharacteristics = `COPY characteristics FROM '/tmp/characteristics_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadCharacteristicReviews = `COPY characteristic_reviews FROM '/tmp/characteristic_reviews_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
 
   console.log('Loading Products...');
   console.time();
@@ -43,10 +46,19 @@ async function loadData() {
   console.log('Loading Reviews...');
   console.time();
   await client.query(loadReviews);
+  await client.query(`UPDATE reviews SET photos = COALESCE(photos, '[]'::JSONB)`);
+  await fs.createReadStream('/tmp/reviews_photos_mini.csv')
+    .pipe(csv())
+    .on('data', async (data) => {
+      // let pIndex = await client.query(`SELECT jsonb_array_length(photos) FROM reviews WHERE id=${data.review_id}`);
+      // pIndex = pIndex.rows[0].jsonb_array_length + 1;
+      await client.query(`UPDATE reviews SET photos = photos || '{"id": ${data.id}, "url": "${data.url}"}'::JSONB WHERE id=${data.review_id}`);
+    });
   console.timeEnd();
 
   console.log('Loading Reviews Photos...');
   console.time();
+
   await client.query(loadReviewsPhotos);
   console.timeEnd();
 
@@ -66,7 +78,7 @@ async function loadData() {
 // test functionality
 (async () => {
   await connectDB();
-  // await loadSchema();
-  // await loadData();
+  await loadSchema();
+  await loadData();
   await closeDB();
 })();

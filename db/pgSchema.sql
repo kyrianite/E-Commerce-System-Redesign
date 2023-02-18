@@ -17,7 +17,7 @@ CREATE TABLE reviews (
   id                  SERIAL PRIMARY KEY,
   product_id          INTEGER REFERENCES products(id),
   rating              INTEGER,
-  date                BIGINT,
+  date                VARCHAR(255),
   summary             TEXT,
   body                TEXT,
   recommend           BOOLEAN,
@@ -25,7 +25,8 @@ CREATE TABLE reviews (
   reviewer_name       VARCHAR(255),
   reviewer_email      VARCHAR(255),
   response            TEXT,
-  helpfulness         INTEGER
+  helpfulness         INTEGER,
+  photos              JSONB
 );
 
 CREATE INDEX reviews_pID_index ON reviews(product_id);

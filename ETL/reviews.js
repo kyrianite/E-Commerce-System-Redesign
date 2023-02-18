@@ -23,9 +23,10 @@ const csvStringifier = createCsvStringifier({
 const transformer = new Transform({
   objectMode: true,
   transform(chunk, encoding, cb) {
+    const row = chunk;
     const unixDate = new Date(Number(chunk.date));
-    chunk.date = unixDate.toISOString();
-    cb(null, csvStringifier.stringifyRecords([chunk]));
+    row.date = unixDate.toISOString();
+    cb(null, csvStringifier.stringifyRecords([row]));
   },
 });
 

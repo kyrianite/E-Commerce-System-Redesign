@@ -23,6 +23,10 @@ const validReviewRequest = (req) => {
   return false;
 };
 
+const formatReviewResults = (res) => {
+
+};
+
 module.exports = {
   getReviews: async (req, res) => {
     try {
@@ -31,9 +35,9 @@ module.exports = {
       if (page === undefined) { page = 1; }
       if (count === undefined) { count = 5; }
       if (!validReviewRequest(req.query)) { throw Error; }
-      const result = await pool.query(`SELECT * FROM REVIEWS WHERE product_id=${product_id} AND REPORTED=false ORDER BY helpfulness DESC`);
-      console.log(result.rows);
-      res.status(200).json({ test: 'it is working somehow...' });
+      const mainInfo = await pool.query(`SELECT * FROM reviews WHERE product_id=${product_id} AND REPORTED=false ORDER BY helpfulness DESC`);
+      console.log(mainInfo.rows);
+      res.status(200).json(mainInfo.rows);
     } catch (err) {
       res.status(500).send();
     }
