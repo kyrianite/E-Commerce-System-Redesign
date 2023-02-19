@@ -8,8 +8,8 @@ const csv = require('csv-parser');
 const credentials = {
   user: process.env.PG_USER,
   host: 'localhost',
-  database: process.env.PG_DB,
-  // database: 'sdc_mini',
+  // database: process.env.PG_DB,
+  database: 'sdc_mini',
   password: process.env.PG_PASS,
   port: process.env.PG_PORT,
 };
@@ -33,19 +33,21 @@ async function loadSchema() {
 }
 
 async function loadData() {
-  const loadProducts = `COPY products FROM '/tmp/product.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadReviews = `COPY reviews (id, product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, response, helpfulness) FROM '/tmp/reviews_clean.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadCharacteristics = `COPY characteristics FROM '/tmp/characteristics.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
-  const loadCharacteristicReviews = `COPY characteristic_reviews FROM '/tmp/characteristic_reviews.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadProducts = `COPY products FROM '/tmp/product_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadReviews = `COPY reviews (id, product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, response, helpfulness) FROM '/tmp/reviews_mini_clean.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadCharacteristics = `COPY characteristics FROM '/tmp/characteristics_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
+  const loadCharacteristicReviews = `COPY characteristic_reviews FROM '/tmp/characteristic_reviews_mini.csv' WITH DELIMITER ',' NULL AS 'null' CSV HEADER`;
 
   console.log('Loading Products...');
   console.time();
   await client.query(loadProducts);
+  await client.query(`SELECT setval('public.products_id_seq', (SELECT MAX(id) from products))`); // update serial_id
   console.timeEnd();
 
   console.log('Loading Reviews...');
   console.time();
   await client.query(loadReviews);
+  await client.query(`SELECT setval('public.reviews_id_seq', (SELECT MAX(id) from reviews))`);
   await client.query(`UPDATE reviews SET photos = COALESCE(photos, '[]'::JSONB)`);
   await fs.createReadStream('/tmp/reviews_photos_mini.csv')
     .pipe(csv())
@@ -59,11 +61,13 @@ async function loadData() {
   console.log('Loading Characteristics...');
   console.time();
   await client.query(loadCharacteristics);
+  await client.query(`SELECT setval('public.characteristics_id_seq', (SELECT MAX(id) from characteristics))`);
   console.timeEnd();
 
   console.log('Loading Characteristic Reviews...');
   console.time();
   await client.query(loadCharacteristicReviews);
+  await client.query(`SELECT setval('public.characteristic_reviews_id_seq', (SELECT MAX(id) from characteristic_reviews))`);
   console.timeEnd();
 
   console.log('Loaded All CSV Data!');
