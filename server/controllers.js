@@ -11,19 +11,15 @@ const { Pool } = require('pg');
 const pool = new Pool({
   user: process.env.PG_USER,
   host: 'localhost',
-  // database: process.env.PG_DB,
-  database: 'sdc_mini',
+  database: process.env.PG_DB,
+  // database: 'sdc_mini',
   password: process.env.PG_PASS,
   port: process.env.PG_PORT,
 });
 
 const validReviewRequest = (req) => {
-  const { page, count, product_id } = req;
-  const sort = req.sort.slice(1, req.sort.length - 1); // remove nested string quotes
-  if (Number.isNaN(page) || Number.isNaN(count) || Number.isNaN(product_id)) {
-    return false;
-  }
-  if (!Number.isInteger(page) || !Number.isInteger(count) || !Number.isInteger()) {
+  const { page, count, product_id, sort } = req;
+  if (!Number.isInteger(+page) || !Number.isInteger(+count) || !Number.isInteger(+product_id)) {
     return false;
   }
   if (sort === 'newest' || sort === 'helpful' || sort === 'relevant') {
@@ -61,8 +57,8 @@ module.exports = {
 
       if (!validReviewRequest(req.query)) { throw Error; }
       let orderBy = 'helpfulness DESC';
-      if (sort === '"newest"') { orderBy = 'date DESC'; }
-      if (sort === '"relevant"') { orderBy = 'rating DESC'; }
+      if (sort === 'newest') { orderBy = 'date DESC'; }
+      if (sort === 'relevant') { orderBy = 'rating DESC'; }
 
       const mainInfo = await pool.query(`SELECT * FROM reviews WHERE product_id=${product_id} AND REPORTED=false ORDER BY ${orderBy} LIMIT ${count} OFFSET ${offset}`);
       res.status(200).json(mainInfo.rows);
@@ -141,6 +137,7 @@ module.exports = {
   },
   markHelpful: async (req, res) => {
     const reviewId = req.params.review_id;
+    console.log('reviewId', reviewId);
     try {
       await pool.query(`UPDATE reviews SET helpfulness = helpfulness + 1 WHERE id=${reviewId}`);
       res.status(204).send();
