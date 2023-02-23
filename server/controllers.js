@@ -7,15 +7,26 @@
 /* eslint-disable object-curly-newline */
 /* eslint-disable camelcase */
 const { Pool } = require('pg');
+const redis = require('redis');
 
 const pool = new Pool({
   user: process.env.PG_USER,
-  host: 'localhost',
+  host: process.env.PG_HOST,
   database: process.env.PG_DB,
   // database: 'sdc_mini',
   password: process.env.PG_PASS,
   port: process.env.PG_PORT,
 });
+
+let redisClient;
+
+(async () => {
+  redisClient = redis.createClient(process.env.REDIS_PORT);
+
+  redisClient.on("error", (error) => console.error(`Error with redis: ${error}`));
+
+  await redisClient.connect();
+})();
 
 const validReviewRequest = (req) => {
   const { page, count, product_id, sort } = req;
@@ -92,7 +103,7 @@ module.exports = {
         }
       }
 
-      const characteristicsQuery = await pool.query(`SELECT name, value FROM characteristics INNER JOIN characteristic_reviews ON characteristics.id=characteristic_reviews.characteristic_id where product_id=${product_id}`);
+      const characteristicsQuery = await pool.query(`SELECT name, value FROM characteristics INNER JOIN characteristic_reviews ON characteristics.id=characteristic_reviews.characteristic_id WHERE product_id=${product_id}`);
       const characteristics = {};
       const characteristicsSizes = {};
       characteristicsQuery.rows.forEach((row) => {

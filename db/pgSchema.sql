@@ -24,7 +24,7 @@ CREATE TABLE reviews (
   reviewer_name       VARCHAR(255),
   reviewer_email      VARCHAR(255),
   response            TEXT,
-  helpfulness         INTEGER,
+  helpfulness         SMALLINT,
   photos              JSONB
 );
 
