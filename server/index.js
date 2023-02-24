@@ -17,6 +17,10 @@ app.get('/', (req, res) => {
   res.json({ info: 'RR SDC API' });
 });
 
+app.get('/loaderio-2050313de725f14a69bc1d7492f0a3a4', (req, res) => {
+  res.send('loaderio-2050313de725f14a69bc1d7492f0a3a4');
+});
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });

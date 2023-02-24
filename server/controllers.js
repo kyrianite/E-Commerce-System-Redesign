@@ -7,7 +7,7 @@
 /* eslint-disable object-curly-newline */
 /* eslint-disable camelcase */
 const { Pool } = require('pg');
-const redis = require('redis');
+// const redis = require('redis');
 
 const pool = new Pool({
   user: process.env.PG_USER,
@@ -18,15 +18,15 @@ const pool = new Pool({
   port: process.env.PG_PORT,
 });
 
-let redisClient;
+// let redisClient;
 
-(async () => {
-  redisClient = redis.createClient(process.env.REDIS_PORT);
+// (async () => {
+//   redisClient = redis.createClient(process.env.REDIS_PORT);
 
-  redisClient.on("error", (error) => console.error(`Error with redis: ${error}`));
+//   redisClient.on("error", (error) => console.error(`Error with redis: ${error}`));
 
-  await redisClient.connect();
-})();
+//   await redisClient.connect();
+// })();
 
 const validReviewRequest = (req) => {
   const { page, count, product_id, sort } = req;
@@ -148,7 +148,6 @@ module.exports = {
   },
   markHelpful: async (req, res) => {
     const reviewId = req.params.review_id;
-    console.log('reviewId', reviewId);
     try {
       await pool.query(`UPDATE reviews SET helpfulness = helpfulness + 1 WHERE id=${reviewId}`);
       res.status(204).send();
